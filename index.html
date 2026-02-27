@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Happy Birthday!</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
+
+        :root {
+            --bg-color: #0b1120;
+            --text-main: #f8fafc;
+            --accent: #f43f5e;
+            --accent-glow: rgba(244, 63, 94, 0.6);
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --balloon-color-1: #f43f5e;
+            --balloon-color-2: #8b5cf6;
+            --balloon-color-3: #3b82f6;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            perspective: 1500px;
+            user-select: none;
+        }
+
+        /* --- Ambient Background --- */
+        .ambient-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.3;
+        }
+        .orb-1 { width: 300px; height: 300px; background: #f43f5e; top: -10%; left: -10%; }
+        .orb-2 { width: 400px; height: 400px; background: #8b5cf6; bottom: -20%; right: -10%; }
+
+        .balloon {
+            position: absolute;
+            bottom: -150px;
+            width: 50px;
+            height: 65px;
+            border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%;
+            opacity: 0.6;
+            filter: drop-shadow(0 4px 10px rgba(0,0,0,0.3));
+        }
+
+        .balloon::after {
+            content: "";
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 2px;
+            height: 20px;
+            background: rgba(255,255,255,0.4);
+        }
+
+        /* --- Layout & Transitions --- */
+        .step {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.25, 1, 0.5, 1);
+            transform: translateY(30px) scale(0.95);
+            z-index: 10;
+        }
+
+        .step.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0) scale(1);
+        }
+
+        /* --- Custom First Step --- */
+        .audio-prompt-step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0) scale(1);
+        }
+
+        .btn-start {
+            background: transparent;
+            color: var(--accent);
+            border: 2px solid var(--accent);
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 15px var(--accent-glow);
+            z-index: 20;
+            margin-top: 30px;
+        }
+
+        .btn-start:hover {
+            background: var(--accent);
+            color: var(--bg-color);
+            box-shadow: 0 0 30px var(--accent-glow);
+        }
+
+        /* --- UI Elements --- */
+        .btn-continue {
+            background: rgba(255,255,255,0.05);
+            color: var(--text-main);
+            border: 1px solid var(--glass-border);
+            padding: 12px 35px;
+            font-size: 1.1rem;
+            font-family: inherit;
+            border-radius: 30px;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            margin-top: 40px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.3s ease, transform 0.3s ease, background 0.3s ease;
+        }
+
+        .btn-continue.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .btn-continue:hover {
+            background: var(--accent);
+            border-color: var(--accent);
+            box-shadow: 0 0 20px var(--accent-glow);
+        }
+
+        .msg-text {
+            font-size: 2.5rem;
+            font-weight: 300;
+            text-align: center;
+            max-width: 80%;
+            line-height: 1.4;
+            min-height: 120px;
+            text-shadow: 0 4px 15px rgba(0,0,0,0.8);
+            z-index: 20;
+        }
+
+        .cursor {
+            display: inline-block;
+            width: 3px;
+            height: 2.5rem;
+            background-color: var(--accent);
+            vertical-align: middle;
+            animation: blink 0.8s infinite;
+        }
+
+        /* --- The Party Popper --- */
+        .blaster-container {
+            cursor: pointer;
+            text-align: center;
+            z-index: 20;
+        }
+
+        .blaster-emoji {
+            font-size: 9rem;
+            filter: drop-shadow(0 10px 20px rgba(0,0,0,0.5));
+            transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .instruction {
+            margin-top: 30px;
+            font-size: 1.2rem;
+            color: #94a3b8;
+            letter-spacing: 2px;
+            animation: pulse 1.5s infinite;
+        }
+
+        .pressure-bar {
+            width: 250px;
+            height: 12px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            margin-top: 25px;
+            overflow: hidden;
+        }
+
+        .pressure-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #f43f5e, #a855f7);
+            box-shadow: 0 0 15px var(--accent-glow);
+            transition: width 0.2s ease-out;
+        }
+
+        /* --- The 3D Reveal Card --- */
+        .card-wrapper {
+            perspective: 1500px;
+            transform-style: preserve-3d;
+            z-index: 20;
+        }
+
+        .greeting-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid var(--glass-border);
+            border-top: 1px solid rgba(255,255,255,0.2);
+            border-left: 1px solid rgba(255,255,255,0.2);
+            padding: 70px 50px;
+            border-radius: 24px;
+            text-align: center;
+            max-width: 90%;
+            width: 600px;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.6), inset 0 0 30px rgba(255,255,255,0.03);
+            transition: transform 0.1s ease;
+            transform-style: preserve-3d;
+        }
+
+        .greeting-card h1, .greeting-card p {
+            transform: translateZ(60px);
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            background: linear-gradient(to right, #f8fafc, #f43f5e, #8b5cf6, #f8fafc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-size: 300% auto;
+            animation: gradient-shift 4s linear infinite;
+        }
+
+        p.message {
+            font-size: 1.3rem;
+            line-height: 1.7;
+            color: #cbd5e1;
+            font-weight: 300;
+        }
+
+        /* --- Confetti --- */
+        .confetti {
+            position: absolute;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        /* --- Animations --- */
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+        @keyframes pulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+        @keyframes gradient-shift { 0% { background-position: 0% center; } 100% { background-position: 300% center; } }
+        .shake { animation: shake 0.3s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-2px, 0, 0) rotate(-2deg); }
+            20%, 80% { transform: translate3d(4px, 0, 0) rotate(2deg); }
+            30%, 50%, 70% { transform: translate3d(-8px, 0, 0) rotate(-5deg); }
+            40%, 60% { transform: translate3d(8px, 0, 0) rotate(5deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="ambient-bg" id="ambient-container">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+    </div>
+
+    <audio id="bg-audio" loop preload="auto">
+        <source src="https://assets.mixkit.co/music/preview/mixkit-happy-party-152.mp3" type="audio/mpeg">
+    </audio>
+
+    <div id="step-0" class="step active audio-prompt-step">
+        <div class="msg-text">I have a tiny surprise for you...</div>
+        <button class="btn-start" onclick="startExperience()">Show me!</button>
+    </div>
+
+    <div id="step-1" class="step">
+        <div class="msg-text"><span id="type-1"></span><span class="cursor"></span></div>
+        <button class="btn-continue" id="btn-1" onclick="nextStep(1)">What?</button>
+    </div>
+
+    <div id="step-2" class="step">
+        <div class="msg-text"><span id="type-2"></span><span class="cursor"></span></div>
+        <button class="btn-continue" id="btn-2" onclick="nextStep(2)">Yay!</button>
+    </div>
+
+    <div id="step-3" class="step">
+        <div class="msg-text"><span id="type-3"></span><span class="cursor"></span></div>
+        <button class="btn-continue" id="btn-3" onclick="nextStep(3)">LET'S GO!</button>
+    </div>
+
+    <div id="step-4" class="step">
+        <div id="blaster" class="blaster-container">
+            <div class="blaster-emoji" id="blaster-icon">🎉</div>
+            <div class="instruction">Tap the popper 5 times to explode it!</div>
+            <div class="pressure-bar">
+                <div class="pressure-fill" id="pressure"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="step-5" class="step">
+        <div class="card-wrapper">
+            <div class="greeting-card" id="tilt-card">
+                <h1 id="final-name">Happy Birthday!</h1>
+                <p class="message">Wishing you the happiest of birthdays! Eat lots of cake, smile big, and have the best day ever. You deserve it! 🎂🎈</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // ADD THE BIRTHDAY PERSON'S NAME RIGHT HERE:
+        // ==========================================
+        const userName = "Sapthesh"; 
+        
+        const audio = document.getElementById('bg-audio');
+
+        // Simple and sweet dynamic typing messages
+        const messages = {
+            1: `Hey ${userName}, guess what?`,
+            2: "Today is your special day!",
+            3: "Let's get this party started!"
+        };
+
+        document.addEventListener("DOMContentLoaded", () => {
+            initializeAmbientBalloons();
+        });
+
+        // STEP 0: Start Experience
+        function startExperience() {
+            // Inject the personalized name into the final card
+            document.getElementById('final-name').innerText = `Happy Birthday, ${userName}!`;
+
+            // Start audio
+            try { 
+                audio.volume = 0.6; 
+                audio.play(); 
+            } catch (err) { 
+                console.error("Audio playback failed", err); 
+            }
+            
+            // Move to Step 1
+            document.getElementById('step-0').classList.remove('active');
+            setTimeout(() => {
+                document.getElementById('step-0').style.display = 'none';
+                document.getElementById('step-1').classList.add('active');
+                typeText('type-1', messages[1], 'btn-1');
+            }, 800);
+        }
+
+        // Typewriter Engine
+        function typeText(elementId, text, buttonId) {
+            const el = document.getElementById(elementId);
+            el.innerHTML = '';
+            let i = 0;
+            const speed = 40; 
+
+            function type() {
+                if (i < text.length) {
+                    el.innerHTML += text.charAt(i);
+                    i++;
+                    setTimeout(type, speed);
+                } else {
+                    setTimeout(() => {
+                        document.getElementById(buttonId).classList.add('show');
+                    }, 400);
+                }
+            }
+            setTimeout(type, 300); 
+        }
+
+        // Standard Step Navigation
+        function nextStep(current) {
+            document.getElementById(`step-${current}`).classList.remove('active');
+            
+            setTimeout(() => {
+                const next = current + 1;
+                const nextEl = document.getElementById(`step-${next}`);
+                if (!nextEl) return;
+                nextEl.classList.add('active');
+                
+                if (messages[next]) {
+                    typeText(`type-${next}`, messages[next], `btn-${next}`);
+                }
+            }, 800);
+        }
+
+        // Blaster Interaction Logic
+        const blaster = document.getElementById('blaster');
+        const blasterIcon = document.getElementById('blaster-icon');
+        const pressureFill = document.getElementById('pressure');
+        let taps = 0;
+        const requiredTaps = 5;
+
+        blaster.addEventListener('click', () => {
+            if (taps >= requiredTaps) return;
+            
+            taps++;
+            const progress = (taps / requiredTaps) * 100;
+            pressureFill.style.width = `${progress}%`;
+            
+            blasterIcon.style.transform = `scale(${1 + (taps * 0.2)})`;
+            blaster.classList.remove('shake');
+            void blaster.offsetWidth;
+            blaster.classList.add('shake');
+
+            if (taps === requiredTaps) {
+                blasterIcon.style.transform = 'scale(0) rotate(180deg)';
+                blasterIcon.style.opacity = '0';
+                
+                setTimeout(() => {
+                    document.getElementById('step-4').classList.remove('active');
+                    setTimeout(() => {
+                        document.getElementById('step-5').classList.add('active');
+                        triggerFinalReveal();
+                    }, 600);
+                }, 500);
+            }
+        });
+
+        // 3D Tilt Effect
+        const card = document.getElementById('tilt-card');
+        document.addEventListener('mousemove', (e) => {
+            if (!document.getElementById('step-5').classList.contains('active')) return;
+            let xAxis = (window.innerWidth / 2 - e.pageX) / 35;
+            let yAxis = (window.innerHeight / 2 - e.pageY) / 35;
+            card.style.transform = `rotateY(${xAxis}deg) rotateX(${yAxis}deg)`;
+        });
+
+        // Final Climax triggers
+        function triggerFinalReveal() {
+            triggerPartyConfetti();
+            triggerClimaxBalloons();
+        }
+
+        // --- Confetti & Balloon Engine ---
+        const ambientContainer = document.getElementById('ambient-container');
+        const confettiColors = ['#f43f5e', '#8b5cf6', '#3b82f6', '#10b981', '#ffffff'];
+
+        function initializeAmbientBalloons() {
+            for (let i = 0; i < 20; i++) {
+                setTimeout(createBalloon, i * 400); 
+            }
+            setInterval(createBalloon, 600); 
+        }
+
+        function createBalloon(isClimax = false) {
+            const balloon = document.createElement('div');
+            balloon.classList.add('balloon');
+            
+            const colors = ['var(--balloon-color-1)', 'var(--balloon-color-2)', 'var(--balloon-color-3)'];
+            balloon.style.background = colors[Math.floor(Math.random() * colors.length)];
+            balloon.style.left = `${Math.random() * 100}vw`;
+            
+            const sizeMult = isClimax ? (Math.random() * 1 + 1.2) : (Math.random() * 0.5 + 0.8);
+            balloon.style.transform = `scale(${sizeMult})`;
+            balloon.style.opacity = isClimax ? '0.8' : '0.5';
+
+            ambientContainer.appendChild(balloon);
+
+            const duration = isClimax ? (Math.random() * 3 + 3) : (Math.random() * 8 + 10);
+
+            balloon.animate([
+                { transform: `scale(${sizeMult}) translateY(0) rotate(0deg)` },
+                { transform: `scale(${sizeMult}) translateY(-120vh) rotate(${Math.random() * 360}deg)` }
+            ], {
+                duration: duration * 1000,
+                easing: 'linear',
+                fill: 'forwards'
+            }).onfinish = () => balloon.remove();
+        }
+
+        function triggerClimaxBalloons() {
+            for (let i = 0; i < 40; i++) {
+                setTimeout(() => createBalloon(true), i * 80);
+            }
+        }
+
+        function triggerPartyConfetti() {
+            shootConfetti(-1, window.innerWidth * 0.1, window.innerHeight); 
+            shootConfetti(1, window.innerWidth * 0.9, window.innerHeight);  
+            setInterval(dropTopConfetti, 400);
+        }
+
+        function shootConfetti(direction, startX, startY) {
+            const numParticles = 100;
+            for (let i = 0; i < numParticles; i++) {
+                const confetti = document.createElement('div');
+                confetti.classList.add('confetti');
+                
+                const size = Math.random() * 12 + 6;
+                confetti.style.width = `${size}px`;
+                confetti.style.height = `${size * (Math.random() > 0.5 ? 1 : 2.5)}px`; 
+                confetti.style.background = confettiColors[Math.floor(Math.random() * confettiColors.length)];
+                confetti.style.borderRadius = Math.random() > 0.4 ? '50%' : '2px';
+                confetti.style.left = `${startX}px`;
+                confetti.style.top = `${startY}px`;
+                
+                document.body.appendChild(confetti);
+
+                const angle = (Math.random() * 50 + 40) * (Math.PI / 180); 
+                const velocity = Math.random() * 1800 + 1000;
+                
+                const endX = startX + (Math.cos(angle) * velocity * direction);
+                const endY = startY - (Math.sin(angle) * velocity) + 600; 
+                const rotation = Math.random() * 1080 - 540;
+
+                const animation = confetti.animate([
+                    { transform: 'translate(0, 0) rotate(0deg)', opacity: 1 },
+                    { transform: `translate(${endX - startX}px, ${endY - startY}px) rotate(${rotation}deg)`, opacity: 0 }
+                ], {
+                    duration: Math.random() * 2000 + 2000,
+                    easing: 'cubic-bezier(0.25, 1, 0.4, 1)', 
+                    fill: 'forwards'
+                });
+
+                animation.onfinish = () => confetti.remove();
+            }
+        }
+
+        function dropTopConfetti() {
+            const confetti = document.createElement('div');
+            confetti.classList.add('confetti');
+            
+            const size = Math.random() * 10 + 5;
+            confetti.style.width = `${size}px`;
+            confetti.style.height = `${size}px`;
+            confetti.style.background = confettiColors[Math.floor(Math.random() * confettiColors.length)];
+            confetti.style.left = `${Math.random() * 100}vw`;
+            confetti.style.top = `-20px`;
+            
+            document.body.appendChild(confetti);
+
+            const animation = confetti.animate([
+                { transform: 'translateY(0) rotate(0deg)' },
+                { transform: `translateY(110vh) rotate(${Math.random() * 720}deg)` }
+            ], {
+                duration: Math.random() * 4000 + 3000,
+                easing: 'linear',
+                fill: 'forwards'
+            });
+
+            animation.onfinish = () => confetti.remove();
+        }
+    </script>
+</body>
+</html>
